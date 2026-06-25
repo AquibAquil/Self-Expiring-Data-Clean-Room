@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/Generated.xcconfig
+**/Flutter/Generated.xcconfig
+**/Flutter/ephemeral/
+**/Pods/
+
+# Generated platform headers / configs
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Runner/GeneratedPluginRegistrant.*
+**/linux/flutter/generated_plugin_registrant.*
+**/windows/flutter/generated_plugin_registrant.*
+**/android/.gradle/
+**/android/local.properties
+**/android/app/release/
+
+# Hive / commit log storage (per-agent temp dirs are already in systemTemp; this is a safety net)
+**/storage/
+**/commit_log/
+
+# Atsign credentials — NEVER commit
+*.atKeys
+.atsign/
+
+# Compiled CLI binaries (recompile locally instead of shipping a Windows-only binary)
+agents/*.exe
+agents/linux/
+
+# Test data (regenerate via scripts/generate_data.dart)
+ids_a.txt
+ids_b.txt
