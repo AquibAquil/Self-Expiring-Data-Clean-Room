@@ -2,13 +2,11 @@ import 'package:at_client_flutter/at_client_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'theme.dart';
 import 'welcome_screen.dart';
 
-/// MANDATORY First-Run Atsign Gate.
-///
-/// Shown on first launch if KeychainStorage().getAllAtsigns() returns empty.
-/// Blocks all auth/onboarding/main UI until the user confirms they have an
-/// Atsign (or opens the Starter Pack page and gets one).
+/// MANDATORY first-run Atsign gate. Blocks every other screen until the user
+/// confirms they have (or will get) an Atsign.
 class AtsignGateScreen extends StatefulWidget {
   const AtsignGateScreen({super.key});
 
@@ -30,15 +28,12 @@ class _AtsignGateScreenState extends State<AtsignGateScreen> {
       final existing = await KeychainStorage().getAllAtsigns();
       if (existing.isNotEmpty) {
         if (!mounted) return;
-        // Already have at least one Atsign on this device — skip the gate.
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         );
         return;
       }
-    } catch (_) {
-      // Fall through to the gate UI on any keychain error.
-    }
+    } catch (_) {/* fall through to the gate UI on any keychain error */}
     if (mounted) setState(() => _checking = false);
   }
 
@@ -64,62 +59,62 @@ class _AtsignGateScreenState extends State<AtsignGateScreen> {
     if (_checking) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Using this app requires an Atsign.',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  Center(
+                    child: Container(
+                      width: 80, height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(Icons.shield_outlined, color: AppColors.primary, size: 38),
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'If you already have an Atsign, click "Continue."',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                  const Text(
+                    'Using this app requires an Atsign',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Or, get free, temporary Atsigns via the Starter Pack:',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                  const SizedBox(height: 14),
+                  const Text(
+                    'An Atsign is your private cryptographic identity. We use it to prove '
+                    'who you are when you confirm or read analysis results. No personal '
+                    'data is sent — your private key never leaves your device.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  const _StepLine('1.', 'Click "Get My Starter Pack" below or visit https://my.atsign.com/starterpack_app in your browser.'),
-                  const _StepLine('2.', 'Enter your email address.'),
-                  const _StepLine('3.', 'Verify your email with a one-time passcode.'),
-                  const _StepLine('4.', 'Come back to the app and click "Continue."'),
+                  const SizedBox(height: 28),
+                  const _Step(num: '1', text: 'Click "Get My Starter Pack" below'),
+                  const _Step(num: '2', text: 'Enter your email address'),
+                  const _Step(num: '3', text: 'Verify your email with a one-time passcode'),
+                  const _Step(num: '4', text: 'Come back here and click "Continue"'),
                   const SizedBox(height: 32),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _openStarterPack,
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Text('Get My Starter Pack'),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _continue,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Text('Continue'),
-                          ),
-                        ),
-                      ),
-                    ],
+                  FilledButton.icon(
+                    onPressed: _openStarterPack,
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Get My Starter Pack'),
                   ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(onPressed: _continue, child: const Text('Continue')),
                 ],
               ),
             ),
@@ -130,19 +125,37 @@ class _AtsignGateScreenState extends State<AtsignGateScreen> {
   }
 }
 
-class _StepLine extends StatelessWidget {
-  const _StepLine(this.num, this.text);
+class _Step extends StatelessWidget {
+  const _Step({required this.num, required this.text});
   final String num;
   final String text;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(width: 24, child: Text(num, style: Theme.of(context).textTheme.bodyLarge)),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              num,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14.5, color: AppColors.textPrimary, height: 1.4),
+            ),
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'gate_screen.dart';
+import 'theme.dart';
 
 void main() {
   runApp(const SelfExpiringDataCleanRoomApp());
@@ -13,7 +14,8 @@ class SelfExpiringDataCleanRoomApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Self-Expiring Data Clean Room',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(),
       home: const AtsignGateScreen(),
     );
   }
