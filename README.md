@@ -128,15 +128,15 @@ sequenceDiagram
   CA->>CR: notify submission_a (SHA-256 hashes)
   CB->>CR: notify submission_b (SHA-256 hashes)
   Note over CR: Compute set intersection
-  CR-->>CA: put result.<id>
-  CR-->>CB: put result.<id>
-  CR-->>SA: put result.<id>
-  CR-->>SB: put result.<id>
+  CR-->>CA: put result for this id
+  CR-->>CB: put result for this id
+  CR-->>SA: put result for this id
+  CR-->>SB: put result for this id
   SA->>CR: notify confirm_a (signed)
   SB->>CR: notify confirm_b (signed)
   Note over CR: Both confirmed — retirement fires
-  CR-->>SA: put receipt.<id> (immutable)
-  CR-->>SB: put receipt.<id> (immutable)
+  CR-->>SA: put immutable receipt
+  CR-->>SB: put immutable receipt
   CR-XCR: delete submissions, result shares, mutex
   Note over CA,CB: Result no longer readable. Receipt survives.
 ```
@@ -325,16 +325,16 @@ flowchart LR
     SA((("@stake_a")))
     SB((("@stake_b")))
 
-    A -- "submission_a.&lt;id&gt;" --> CR
-    B -- "submission_b.&lt;id&gt;" --> CR
-    CR -- "result.&lt;id&gt;" --> A
-    CR -- "result.&lt;id&gt;" --> B
-    CR -- "result.&lt;id&gt;" --> SA
-    CR -- "result.&lt;id&gt;" --> SB
-    SA -- "confirm_a.&lt;id&gt;" --> CR
-    SB -- "confirm_b.&lt;id&gt;" --> CR
-    CR -. "receipt.&lt;id&gt; (immutable, survives)" .-> SA
-    CR -. "receipt.&lt;id&gt; (immutable, survives)" .-> SB
+    A -- "submission_a" --> CR
+    B -- "submission_b" --> CR
+    CR -- "result" --> A
+    CR -- "result" --> B
+    CR -- "result" --> SA
+    CR -- "result" --> SB
+    SA -- "confirm_a" --> CR
+    SB -- "confirm_b" --> CR
+    CR -. "receipt (immutable, survives)" .-> SA
+    CR -. "receipt (immutable, survives)" .-> SB
 ```
 
 > Arrow direction = "owned by source, shared with target." Solid edges represent keys destroyed at retirement. Dotted edges are the immutable receipt — the only thing that survives.
@@ -360,11 +360,11 @@ There is no permission check to bypass because there is no code that would invok
 
 ```mermaid
 flowchart TB
-    subgraph FILE["company_agent.dart (~110 lines)"]
-        WHAT_IS["✓ Hashes raw IDs locally<br/>✓ atClient.notify(submission → @cleanroom)<br/>✓ subscribe(regex: 'result.&lt;id&gt;.*')<br/>✓ getCurrentAtSign() (own atSign only)"]
-        WHAT_ISNT["✗ atClient.get(...) — 0 occurrences<br/>✗ atClient.lookup(...) — 0 occurrences<br/>✗ sharedBy = other party — never set<br/>✗ String 'company_b' — never appears<br/>✗ Permission check — none exists, none needed"]
+    subgraph FILE["company_agent.dart — about 110 lines"]
+        WHAT_IS["Present in code:<br/>Hashes raw IDs locally<br/>atClient.notify submission to cleanroom<br/>subscribe for own result<br/>getCurrentAtSign for own atSign only"]
+        WHAT_ISNT["Absent from code:<br/>atClient.get — 0 occurrences<br/>atClient.lookup — 0 occurrences<br/>sharedBy other party — never set<br/>String 'company_b' — never appears<br/>Permission check — none exists, none needed"]
     end
-    PROOF["⇒ No code path exists to read the other party's data.<br/>The boundary is structural, not a flag a bug could disable."]
+    PROOF["No code path exists to read the other party's data.<br/>The boundary is structural, not a flag a bug could disable."]
     WHAT_IS --> PROOF
     WHAT_ISNT --> PROOF
     classDef present fill:#e6f4ea,stroke:#4F7942,color:#1a1a1a
@@ -508,7 +508,7 @@ clean_room_atsign/
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE) if present.
+Licensed under the MIT License — see [LICENSE](LICENSE).
 
 ---
 
