@@ -1,0 +1,12 @@
+name: retirement_policy
+description: Waits for confirmation from BOTH stakeholders, then revokes/deletes the analysis-specific clean room and result keys.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  at_client: ^3.11.0
+  at_commons: ^5.0.0
+  at_cli_commons: ^1.3.0
