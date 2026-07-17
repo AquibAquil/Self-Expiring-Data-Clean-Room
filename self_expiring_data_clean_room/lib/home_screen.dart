@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final atKeys = await KeychainStorage().getAtsign(widget.atSign);
       if (atKeys == null) throw 'No keys found in keychain for ${widget.atSign}';
       final io = FileAtKeysIo(filePath: (_) => finalPath);
-      io.write(widget.atSign, atKeys);
+      await io.write(widget.atSign, atKeys);
       if (mounted) {
         showAppToast(context, kind: ToastKind.success, message: 'Keys exported to $finalPath');
       }
