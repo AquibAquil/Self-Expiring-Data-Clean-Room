@@ -10,8 +10,18 @@ import 'theme.dart';
 const String kNamespace = 'cleanroom';
 const String kAppName = 'SelfExpiringDataCleanRoom';
 const String kDeviceName = 'flutter';
-const String kRegistrarUrl = 'my.atsign.com';
-const String kRegistrarApiKey = '5f93a2fa-2e3b-4332-9924-c29cc6e164ba';
+const String kRegistrarUrl = String.fromEnvironment(
+  'REGISTRAR_URL',
+  defaultValue: 'my.atsign.com',
+);
+
+// Injected at build time: pass --dart-define=REGISTRAR_API_KEY=... for a real
+// deployment. Default is Atsign's public sample key from the at_client_flutter
+// walkthrough — fine for local demos, not for anything you ship.
+const String kRegistrarApiKey = String.fromEnvironment(
+  'REGISTRAR_API_KEY',
+  defaultValue: '5f93a2fa-2e3b-4332-9924-c29cc6e164ba',
+);
 
 /// Welcome / Auth screen — supports all four standard workflows.
 /// Modeled on the at_client_flutter 1.1.3 example walkthrough.dart.
