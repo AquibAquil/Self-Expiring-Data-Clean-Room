@@ -272,12 +272,22 @@ Open **four terminal windows**, all in `agents/`. Replace each `@your_atsign_*` 
   --company-a "@your_companya" --company-b "@your_companyb"
 ```
 
+**Before Windows 3 & 4 — generate a shared salt and give it to both companies out-of-band** (NOT via the clean room; the clean room must never see this file):
+```powershell
+# 32 cryptographically random bytes; distribute the same file to both A and B.
+$b = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+[IO.File]::WriteAllBytes("$PWD\..\salt.bin", $b)
+```
+(bash/zsh: `openssl rand -out ../salt.bin 32`)
+
 **Window 3 — Company A submits:**
 ```powershell
 .\company_agent.exe -a "@your_companya" -n cleanroom \
   --role a --analysis-id demo-001 \
   --peer "@your_cleanroom" \
-  --input ..\ids_a.txt
+  --input ..\ids_a.txt \
+  --salt-file ..\salt.bin
 ```
 
 **Window 4 — Company B submits:**
@@ -285,7 +295,8 @@ Open **four terminal windows**, all in `agents/`. Replace each `@your_atsign_*` 
 .\company_agent.exe -a "@your_companyb" -n cleanroom \
   --role b --analysis-id demo-001 \
   --peer "@your_cleanroom" \
-  --input ..\ids_b.txt
+  --input ..\ids_b.txt \
+  --salt-file ..\salt.bin
 ```
 
 ### Step 7 — Watch the lifecycle in the Flutter app

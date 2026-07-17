@@ -9,7 +9,9 @@ import 'package:crypto/crypto.dart';
 /// Company-side agent for the clean room joint analysis.
 ///
 /// 1. Reads raw identifiers from --input file.
-/// 2. Hashes them locally (SHA-256 + per-analysis salt) so raw IDs never leave.
+/// 2. Hashes them locally (HMAC-SHA-256 keyed with a shared secret salt from
+///    --salt-file) so raw IDs never leave and the clean room cannot
+///    dictionary-attack the hashes.
 /// 3. Notifies the clean room Atsign with the hash list as
 ///    `submission_<role>.<analysisId>.<namespace>`.
 /// 4. Subscribes for the aggregate result and prints it on arrival.
@@ -20,7 +22,11 @@ Future<void> main(List<String> args) async {
     ..addOption('role', allowed: ['a', 'b'], help: 'Which side of the analysis this agent represents.')
     ..addOption('analysis-id', mandatory: true, help: 'Per-analysis UUID picked by the operator.')
     ..addOption('peer', mandatory: true, help: 'The clean room Atsign (e.g. @cleanroom).')
-    ..addOption('input', mandatory: true, help: 'Path to a newline-separated file of raw identifiers.');
+    ..addOption('input', mandatory: true, help: 'Path to a newline-separated file of raw identifiers.')
+    ..addOption('salt-file', mandatory: true, help:
+        'Path to a file containing the shared secret salt for this analysis. '
+        'Both A and B must be given the same file, distributed out-of-band '
+        '(e.g. NoPorts tunnel, sealed envelope). Must be at least 32 bytes.');
 
   // Default the storage-dir to a fresh temp dir if the caller didn't pass one,
   // so two agents on the same box never collide on Hive boxes.
@@ -35,16 +41,24 @@ Future<void> main(List<String> args) async {
   final analysisId = parsed['analysis-id'] as String;
   final peer = parsed['peer'] as String;
   final inputPath = parsed['input'] as String;
+  final saltPath = parsed['salt-file'] as String;
 
   stdout.writeln('[$me] company_agent role=$role analysisId=$analysisId peer=$peer');
 
-  // Per-analysis salt MUST be agreed between A and B so hashes are comparable.
-  // We derive it deterministically from the analysisId for demo simplicity.
-  final salt = analysisId;
+  // Per-analysis salt MUST be agreed between A and B so hashes are comparable
+  // AND kept secret from the clean-room operator — otherwise a curious operator
+  // with a candidate list (common emails, phone-number ranges) can brute-force
+  // which raw identifiers were in a submission. The salt is loaded from a file
+  // distributed out-of-band between A and B; the clean room never sees it.
+  final salt = (await File(saltPath).readAsBytes());
+  if (salt.length < 32) {
+    stderr.writeln('[$me] salt-file must be at least 32 bytes (generate with a CSPRNG, e.g. openssl rand -out salt.bin 32)');
+    exit(2);
+  }
   final rawIds = await File(inputPath).readAsLines();
   final hashes = <String>[
     for (final id in rawIds.where((l) => l.trim().isNotEmpty))
-      sha256.convert(utf8.encode('$salt|${id.trim().toLowerCase()}')).toString(),
+      Hmac(sha256, salt).convert(utf8.encode(id.trim().toLowerCase())).toString(),
   ];
 
   // Subscribe BEFORE submitting so we never miss the result.
@@ -71,7 +85,7 @@ Future<void> main(List<String> args) async {
 
   final body = jsonEncode({
     'analysisId': analysisId,
-    'hashScheme': 'sha256_v1',
+    'hashScheme': 'hmac_sha256_v1',
     'hashes': hashes,
   });
 

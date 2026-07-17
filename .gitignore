@@ -42,3 +42,7 @@ agents/linux/
 # Test data (regenerate via scripts/generate_data.dart)
 ids_a.txt
 ids_b.txt
+
+# Shared salt for the hash — must be distributed out-of-band, never committed
+salt.bin
+*.salt
