@@ -62,7 +62,7 @@ The blueprint canvas is where this system was designed, not documented after the
 
 ## The Honest Limitation
 
-The matching computation uses **salted SHA-256 hashing** to compare identifiers — a simple, real, working version of Private Set Intersection. It is **not** the cryptographically blinded version a production deployment would need; naive hash matching can in principle be probed by a party with a strong guess at the other side's underlying values. We chose to build the correct, simple version and say so plainly, rather than overstate what 24 hours of engineering can deliver. The production path is documented in [Scaling & Production Considerations](#scaling--production-considerations).
+The matching computation uses **HMAC-SHA-256 keyed with a shared secret salt** (distributed out-of-band between A and B, never through the clean room) to compare identifiers — a simple, real, working version of Private Set Intersection. Because the clean room never sees the salt, it cannot dictionary-attack the hashes. It is still **not** the cryptographically blinded version a production deployment would need: either *company* knows the salt, so a company with a strong guess at the other side's underlying values can probe membership. We chose to build the correct, simple version and say so plainly, rather than overstate what 24 hours of engineering can deliver. The production path is documented in [Scaling & Production Considerations](#scaling--production-considerations).
 
 ## What We Are NOT Claiming
 
@@ -394,7 +394,7 @@ This hackathon build implements the simplest version of the architecture that de
 
 **More than two parties.** The current code special-cases A and B via `--company-a` / `--company-b` flags. Generalizing to N parties is mechanical: replace those two with `--participants @c1,@c2,...,@cN` and have the clean room wait for N submissions before computing the intersection. No protocol redesign required.
 
-**Hash-based set intersection.** This build uses SHA-256 with a per-engagement salt over each party's identifiers. This defeats casual offline tampering but is vulnerable to dictionary attacks against low-entropy inputs (emails, phone numbers) by a curious clean-room operator. For production we would replace it with a Private Set Intersection (PSI) protocol such as ECDH-PSI or OPRF-based PSI, run directly between company agents over **NoPorts** tunnels (Atsign's E2E-encrypted TCP module). The clean room would no longer see hashes at all — only an encrypted overlap count.
+**Hash-based set intersection.** This build uses HMAC-SHA-256 keyed with a per-engagement secret salt (`--salt-file`, distributed out-of-band between the companies) over each party's identifiers. The clean-room operator never learns the salt, so it cannot dictionary-attack low-entropy inputs (emails, phone numbers); the residual exposure is that either company, which does know the salt, can probe membership of guessed values. For production we would replace it with a Private Set Intersection (PSI) protocol such as ECDH-PSI or OPRF-based PSI, run directly between company agents over **NoPorts** tunnels (Atsign's E2E-encrypted TCP module). The clean room would no longer see hashes at all — only an encrypted overlap count.
 
 **Dataset size.** Set intersection over hashes is O(N+M) and runs comfortably for datasets in the millions of records on commodity hardware. The current binary holds the full submission in memory; production would stream from disk and batch the intersection.
 
